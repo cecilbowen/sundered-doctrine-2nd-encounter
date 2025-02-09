@@ -1,0 +1,51 @@
+about 1:10 per turn
+wheels 4 (far left-most) and 2 (inner right) start off with blank at top
+wheels rotate in phase 1, 2, 3, 4 order from left to right
+    phase 1: wheel 4 (far left-most) rotates
+    phase 2: wheel 3 (inner left) rotates, etc
+when a wheel rotates, it's blank (if it has one) is replace with a new symbol
+a locked in "kill" triggers damage to start from whatever bar you're at
+    so if you triggered kill on phase 4, then you'd have bars 0 - 4 for damage 
+    trigger kill on 2, and you only have bars 3 - 4 for damage 
+    wheels 1 and 3 always have remember in the first slot 
+    wheels only reset after a damage phase 
+        
+
+
+
+start wheel state examples
+    4: blank, savathun, stop, knowledge, kill, commune, knowledge 
+    3: knowledge, stop, savathun, commune, kill, savathun, knowledge
+    2: blank, commune, savathun, kill, stop, knowledge, savathun 
+    1: knowledge, kill, commune, stop, savathun, knowledge, savathun 
+
+    4: [blank -> savathun], knowledge, stop, kill, commune, savathun, knowledge
+    3: knowledge, savathun, commune, stop, kill, savathun, commune 
+    2: [blank -> commune], knowledge, commune, kill, stop, savathun, savathun 
+    1: knowledge, commune, kill, stop, savathun, knowledge, savathun 
+
+    4: [blank -> commune], savathun, knowledge, commune, kill, stop, savathun
+    3: knowledge, commune, savathun, stop, kill, knowledge, savathun
+    2: [blank -> savathun], commune, knowledge, stop, kill, savathun, knowledge  
+    1: knowledge, savathun, commune, stop, commune, knowledge, kill
+
+    4: [blank -> hive], knowledge, commune, kill, savathun, stop, savathun
+    3: knowledge, stop, commune, kill, savathun, commune, knowledge
+    2: [blank -> stop], commune, savathun, stop, kill, knowledge, knowledge 
+    1: knowledge, savathun, commune, stop, kill, savathun, knowledge
+
+    4: [blank -> ], 
+    3: 
+    2: [blank -> ], 
+    1: 
+
+    4: [blank -> ], 
+    3: 
+    2: [blank -> ], 
+    1: 
+
+    4: [blank -> ], 
+    3: 
+    2: [blank -> ], 
+    1: 
+

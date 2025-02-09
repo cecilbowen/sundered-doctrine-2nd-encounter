@@ -1,0 +1,27 @@
+.spin-container {
+  animation: in 2s linear 0s infinite reverse;
+  animation-play-state: paused;
+  width: 120px;
+  height: 5px;
+  position: absolute;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.spin {
+  animation: in 4s linear 0s infinite normal;
+}
+
+/* .spin-container:hover {
+  animation-play-state: running;
+} */
+
+@keyframes in {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
