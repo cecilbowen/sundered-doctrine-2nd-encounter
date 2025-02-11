@@ -390,7 +390,7 @@ const App = () => {
             trigger={trigger} screenUpdate={screenUpdate} changeLockStatus={changeLockStatus} />
         </div>
         {simpleEvents ? renderSimpleEvents() : renderEventLog()}
-        <small>
+        <small style={{ display: "flex", justifyContent: "center" }}>
         <a target="_blank"
           rel="noopener noreferrer" href="https://github.com/cecilbowen/sundered-doctrine-2nd-encounter">Source Code</a>
         </small>
