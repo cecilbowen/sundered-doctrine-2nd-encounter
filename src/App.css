@@ -1,5 +1,15 @@
+:root {
+  --wheel-size: 200px;
+}
+
+.App {
+  margin-left: 1em; /* css is hard */
+}
+
 .caption-grid {
-  margin-top: 1em;
+  justify-content: flex-start;
+  align-items: center;
+  width: min-content;
 }
 
 .phase {
@@ -12,37 +22,25 @@
 .diamond-button {
   position: relative;
   cursor: pointer;
-  /* border: 1px solid black; */
+  scale: 1.5;
   width: 1em;
   height: 1em;
 }
-
-.lock-box {
-  width: 300px;
-  height: 150px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: transparent;
-  position: relative;
+.diamond-top {
+  position: absolute;
+  top: -8px;
+  left: 0px;
 }
-
-.lock {
-  width: 150px;
-  height: 150px;
-  border: 2px solid black;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: #a4b08f;
-  background-size: cover;
-  background-position: center;
-  position: relative;
+.diamond-bottom {
+  position: absolute;
+  top: 8px;
+  left: 0px;
+  rotate: 180deg;
 }
 
 .wheel {
-  width: 300px;
-  height: 300px;
+  width: var(--wheel-size);
+  height: var(--wheel-size);
   border: 2px solid black;
   /* border-radius: 260px; */
   display: flex;
@@ -54,8 +52,8 @@
 }
 
 .wheel-dial {
-  width: 110px;
-  height: 110px;
+  width: calc(var(--wheel-size) / 2.72);
+  height: calc(var(--wheel-size) / 2.72);
   border: 2px dashed black;
   background-color: #282715;
   border-radius: 50%;
@@ -66,7 +64,7 @@
 }
 
 .wheel-hands {
-  width: 120px;
+  width: calc(var(--wheel-size) / 2.5);
   height: 5px;
   border: 2px dashed black;
   background-color: #141408;
@@ -76,18 +74,46 @@
 
 .wheels {
   display: flex;
-  justify-content: space-evenly;
+  flex-wrap: wrap;
+  margin-top: 1em;
+  gap: 1em;
+  justify-content: flex-start;
+}
+
+.lock-box {
+  width: var(--wheel-size);
+  height: calc(var(--wheel-size) / 2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: transparent;
+  position: relative;
+  margin-right: 5px; /* i guess.... */
+}
+
+.lock {
+  width: calc(var(--wheel-size) / 2);
+  height: calc(var(--wheel-size) / 2);
+  border: 2px solid black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #a4b08f;
+  background-size: cover;
+  background-position: center;
+  position: relative;
 }
 
 .locks {
   display: flex;
-  justify-content: space-evenly;
-  gap: 47px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 1em;
 }
 
 .small-circle {
-  width: 60px;
-  height: 60px;
+  width: calc(var(--wheel-size) / 5);
+  height: calc(var(--wheel-size) / 5);
   background-repeat: round;
   border-radius: 50%;
   position: absolute;
@@ -97,6 +123,34 @@
   box-shadow: 0 0 24px yellow;
   outline: 2px solid yellow;
 }
+.damage {
+  box-shadow: 0 0 24px orange;
+  outline: 2px solid orange;
+}
+.stall {
+  box-shadow: 0 0 24px black;
+  outline: 2px solid black;
+}
+
+svg.prep {
+  .MuiRating-iconFilled {
+    color: #4094c9;
+  }
+
+  .MuiRating-iconEmpty {
+    color: darkgray;
+  }
+}
+
+svg.damage-bar {
+  box-shadow: 0 0 24px orange;
+  color: orange;
+}
+svg.stall-bar {
+  box-shadow: 0 0 24px black;
+  color: black;
+}
+
 
 .small-circle-image {
   width: 100%;
@@ -108,62 +162,20 @@
 }
 
 /* Position each small circle at clock positions */
-.small-circle:nth-child(3) { transform: rotate(0deg) translateY(-105px); }  /* 12 */
-.small-circle:nth-child(4) { transform: rotate(60deg) translateY(-105px); } /* 2 */
-.small-circle:nth-child(5) { transform: rotate(105deg) translateY(-105px); } /* 4 */
-.small-circle:nth-child(6) { transform: rotate(150deg) translateY(-105px); } /* 5 */
-.small-circle:nth-child(7) { transform: rotate(210deg) translateY(-105px); } /* 7 */
-.small-circle:nth-child(8) { transform: rotate(255deg) translateY(-105px); } /* 8 */
-.small-circle:nth-child(9) { transform: rotate(300deg) translateY(-105px); } /* 10 */
-
-.reverse-spin {
-  animation-direction: reverse !important;
-}
-
-.paused-spin {
-  animation-play-state: paused !important;
-}
-
-@-webkit-keyframes rotating-cw /* Safari and Chrome */ {
-  from {
-    -webkit-transform: rotate(0deg);
-    -o-transform: rotate(0deg);
-    transform: rotate(0deg);
-  }
-  to {
-    -webkit-transform: rotate(360deg);
-    -o-transform: rotate(360deg);
-    transform: rotate(360deg);
-  }
-}
-@keyframes rotating-cw {
-  from {
-    -ms-transform: rotate(0deg);
-    -moz-transform: rotate(0deg);
-    -webkit-transform: rotate(0deg);
-    -o-transform: rotate(0deg);
-    transform: rotate(0deg);
-  }
-  to {
-    -ms-transform: rotate(360deg);
-    -moz-transform: rotate(360deg);
-    -webkit-transform: rotate(360deg);
-    -o-transform: rotate(360deg);
-    transform: rotate(360deg);
-  }
-}
-.rotating-cw {
-  -webkit-animation: rotating-cw 2s linear infinite;
-  -moz-animation: rotating-cw 2s linear infinite;
-  -ms-animation: rotating-cw 2s linear infinite;
-  -o-animation: rotating-cw 2s linear infinite;
-  animation: rotating-cw 2s linear infinite;
-}
+.small-circle:nth-child(3) { transform: rotate(0deg) translateY(calc(var(--wheel-size) / -2.857)); }  /* 12 */
+.small-circle:nth-child(4) { transform: rotate(60deg) translateY(calc(var(--wheel-size) / -2.857)); } /* 2 */
+.small-circle:nth-child(5) { transform: rotate(105deg) translateY(calc(var(--wheel-size) / -2.857)); } /* 4 */
+.small-circle:nth-child(6) { transform: rotate(150deg) translateY(calc(var(--wheel-size) / -2.857)); } /* 5 */
+.small-circle:nth-child(7) { transform: rotate(210deg) translateY(calc(var(--wheel-size) / -2.857)); } /* 7 */
+.small-circle:nth-child(8) { transform: rotate(255deg) translateY(calc(var(--wheel-size) / -2.857)); } /* 8 */
+.small-circle:nth-child(9) { transform: rotate(300deg) translateY(calc(var(--wheel-size) / -2.857)); } /* 10 */
 
 .lockset-label {
   display: flex;
   justify-content: center;
   font-size: 16px;
+  font-weight: bold;
+  text-transform: capitalize;
 }
 
 .locked-wheel {
@@ -193,15 +205,17 @@
 }
 
 .actions {
+  width: 52em;
   height: 5em;
   /* border: 2px solid black; */
   margin-top: 1.5em;
   margin-left: 1em;
   margin-right: 1em;
   display: flex;
+  justify-content: flex-start;
   align-items: center;
   flex-wrap: wrap;
-  flex-direction: column;
+  flex-flow: row;
   overflow: auto;
 }
 
@@ -212,6 +226,7 @@
   background-position: center;
   border-radius: 15px;
   margin-right: 1em;
+  flex: none;
 }
 
 .timer-holder {

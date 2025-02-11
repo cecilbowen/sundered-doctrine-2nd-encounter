@@ -1,15 +1,38 @@
 about 1:10 per turn
-wheels 4 (far left-most) and 2 (inner right) start off with blank at top
+wheels 1 (far left-most) and 3 (inner right) start off with blank at top
 wheels rotate in phase 1, 2, 3, 4 order from left to right
-    phase 1: wheel 4 (far left-most) rotates
-    phase 2: wheel 3 (inner left) rotates, etc
+    phase 1: wheel 1 (far left-most) rotates
+    phase 2: wheel 2 (inner left) rotates, etc
 when a wheel rotates, it's blank (if it has one) is replace with a new symbol
-a locked in "kill" triggers damage to start from whatever bar you're at
-    so if you triggered kill on phase 4, then you'd have bars 0 - 4 for damage 
-    trigger kill on 2, and you only have bars 3 - 4 for damage 
-    wheels 1 and 3 always have remember in the first slot 
-    wheels only reset after a damage phase 
-        
+a kill read triggers damage to start from whatever bar you're at
+    so if you triggered kill on phase 0, then you'd have 4 bars for damage 
+    trigger kill on 2, and you only have 2 bars for damage 
+    wheels 2 and 4 always have remember in the first slot 
+    wheels only reset after a damage round 
+    screens reset after damage or lockset engagement
+    'active' wheel is lit during it's phase 
+        eg, wheel 1 is lit from phase 0 to 1
+
+
+progress bar:
+    0: wheel 1 is read
+    1: wheel 2 is read 
+    2: wheel 3 is read 
+    3: wheel 4 is read 
+    4: reset to 0 
+
+damage round:
+    wheel that triggered kill is the only wheel that keeps kill, every other wheel has kill replaced 
+    all screens actively match whats on the wheels
+    x: damage starts
+
+todo:
+    action bar scroll to new action 
+    event log
+        timestamp as either timestamp or progress percentage
+        filters:
+            defaults to actions
+            also options for wheel states (rotations, locks)
 
 
 

@@ -13,10 +13,6 @@
   animation: in 4s linear 0s infinite normal;
 }
 
-/* .spin-container:hover {
-  animation-play-state: running;
-} */
-
 @keyframes in {
   from {
     transform: rotate(0deg);

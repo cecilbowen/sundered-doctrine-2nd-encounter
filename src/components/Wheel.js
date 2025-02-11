@@ -2,22 +2,27 @@ import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import Grid from '@mui/material/Grid2';
 import DiamondIcon from './DiamondIcon';
-import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import LockIcon from '@mui/icons-material/Lock';
 import OneIcon from '@mui/icons-material/LooksOne';
 import TwoIcon from '@mui/icons-material/LooksTwo';
 import ThreeIcon from '@mui/icons-material/Looks3';
-import { getReadFromPhase, getSymbolImage, getWheelNextPosition,
-    normalizePhase, shouldReadHappen, generateNewSymbols,
-    grabRandomSymbol } from '../util';
+import { getSymbolImage, getWheelNextPosition,
+    normalizePhase, shouldScreenUpdateHappen, generateNewSymbols,
+    grabRandomSymbol,
+    getWheelToCopy,
+    getWheelFromPhase,
+    isWheelBeingRead,
+    doesWheelMatter,
+    ROUNDS,
+    getWheelToRotate } from '../util';
 import DunkIcon from '@mui/icons-material/MoveToInbox';
 import '../Spin.css';
 import { Paper } from '@mui/material';
 
 const Wheel = ({ wheelNumber, symbolsForced, rotation,
-    locked, changeRotation, phase, trigger, read,
-    changeLockStatus
+    locked, changeRotation, phase, trigger, screenUpdate,
+    changeLockStatus, round, nudger
 }) => {
 // no-lint
 /* symbols array order
@@ -36,44 +41,95 @@ const Wheel = ({ wheelNumber, symbolsForced, rotation,
     const angles = [0, -60, -105, 210, 150, 105, 60]; // counter angles for images to stay upright
 
     useEffect(() => {
-        if (!symbolsForced) {
-            const newSymbols = generateNewSymbols(wheelNumber);
-            console.log(wheelNumber, newSymbols);
-            setSymbols(newSymbols);
-            setAction(newSymbols[0]);
+        let newSymbols = symbolsForced;
+        if (!newSymbols) {
+            newSymbols = generateNewSymbols(wheelNumber);
         }
+
+        console.log(wheelNumber, newSymbols);
+        setSymbols(newSymbols);
+        setAction(newSymbols[position]);
     }, []);
 
-    const phaseToWheelRotation = { // phase: wheel map
-        0: 22, // don't do anything on startup phase
-        1: 4, // on phase 1, wheel 4 rotates, etc
-        2: 3,
-        3: 2,
-        4: 1
+    useEffect(() => {
+        if (round !== ROUNDS.PREP) {
+            if (round === ROUNDS.DPS) {
+                const syms = [...symbols];
+                if (doesWheelMatter(wheelNumber, phase)) {
+                    // remove kill from any activate-able wheels
+                    const killIndex = syms.indexOf("kill");
+                    const blankIndex = syms.indexOf("blank");
+                    syms[killIndex] = grabRandomSymbol(syms);
+                    if (blankIndex !== -1) {
+                        syms[blankIndex] = grabRandomSymbol(syms);
+                    }
+                    setSymbols(syms);
+                    console.log(`wheel #${wheelNumber} still can be activated - removing KILL from it`);
+                }
+                screenUpdate(wheelNumber, syms[position]);
+            } // TODO: test stall phase end, with a KILL on wheel 1 (immediate dps phase?)
+        }
+    }, [round]);
+
+    const handlePhaseChange = () => {
+        const wheelToCopy = getWheelToCopy(phase);
+        const wheelToRead = getWheelFromPhase(phase);
+        const wheelToRotate = getWheelToRotate(phase);
+
+        if (round === ROUNDS.DPS) {
+            if (isWheelBeingRead(wheelNumber, phase) && doesWheelMatter(wheelNumber, phase)) {
+                // can still reflect changes on screen
+                trigger(wheelNumber, action);
+                console.log(`\t damage phase, wheel ${wheelNumber} trigger`);
+            }
+        } else if (round === ROUNDS.STALL) {
+            // wheels have no affect during stall round, only screens
+            return;
+        } else {
+            // prep round, standard stuff
+            if (shouldScreenUpdateHappen(phase)) {
+                console.log("screen update imminent.  wheelToCopy: ", wheelToCopy);
+                if (wheelToCopy === wheelNumber) {
+                    console.log("\t wheelNumber matches, update time: ", wheelNumber);
+                    screenUpdate(wheelNumber, action);
+                }
+            }
+
+            if (wheelToRead === wheelNumber) {
+                changeLockStatus(wheelNumber, false);
+                trigger(wheelNumber, action);
+            }
+
+            if (wheelToRotate === wheelNumber) {
+                rotateWheel(true);
+            }
+        }
     };
 
     useEffect(() => {
-        const wheelToRead = getReadFromPhase(phase);
-
-        if (shouldReadHappen(phase)) {
-            if (wheelToRead === wheelNumber) {
-                read(wheelNumber, action);
-                changeLockStatus(wheelNumber, false);
-            }
-
-            trigger(wheelNumber, action);
-        }
-
-        const modPhase = normalizePhase(phase);
-        const wheelToRotate = phaseToWheelRotation[modPhase];
-
-        if (wheelToRotate === wheelNumber) {
-            rotateWheel(true);
-        }
+        handlePhaseChange();
     }, [phase]);
 
+    useEffect(() => {
+        if (nudger > 0) {
+            handlePhaseChange();
+        }
+    }, [nudger]);
+
     const rotateWheel = (auto, amount = 1) => {
-        if (locked && auto) {
+        if (!symbols) { return; }
+
+        // manual rotation during dps changes screens, if wheel hasn't been processed yet
+        if (!auto && round === ROUNDS.DPS) {
+            if (doesWheelMatter(wheelNumber, phase)) {
+                console.log(`wheel ${wheelNumber} during ${round} matters! <33`);
+                const newPos = getWheelNextPosition(position, rotation, amount);
+                setPosition(newPos);
+                setAction(symbols[newPos]);
+                screenUpdate(wheelNumber, symbols[newPos]);
+                return;
+            }
+        } else if (auto && (locked || phase === 0)) {
             return;
         }
 
@@ -88,9 +144,10 @@ const Wheel = ({ wheelNumber, symbolsForced, rotation,
             newPos = getWheelNextPosition(newPos, rotation, 1);
         }
 
-        let syms = [...symbols];
-        if (auto && syms.indexOf("blank") !== -1) { // TODO: make sure blanks only get replaced on auto rotations
-            syms = [grabRandomSymbol(), ...syms.filter(x => x !== "blank")];
+        const syms = [...symbols];
+        const blankIndex = syms.indexOf("blank");
+        if (blankIndex !== -1) {
+            syms[blankIndex] = grabRandomSymbol(syms);
         }
 
         setSymbols(syms);
@@ -140,20 +197,26 @@ const Wheel = ({ wheelNumber, symbolsForced, rotation,
         </IconButton>;
     };
 
+    const doBeScreenUpdating = shouldScreenUpdateHappen(phase);
+
     if (!symbols) {
         return null;
     }
+
+    const wheelToRead = getWheelFromPhase(phase);
+    const glow = wheelNumber === wheelToRead ? 'active' : '';
 
     return (
         <Grid className="caption-grid" container spacing={2}>
             <Grid size={12} sx={{ display: "flex" }} justifyContent={"center"}>
                 <IconButton onClick={prepWheelRotation}
-                    sx={{ transform: "scale(1.5)" }} title={`Change Wheel ${wheelNumber} Rotation`}>
+                    title={`Change Wheel ${wheelNumber} Rotation`}>
                     <DiamondIcon />
+                    {doBeScreenUpdating && "SCREEN UPDATE"}
                 </IconButton>
             </Grid>
             <Grid size={12} sx={{ display: "flex" }} justifyContent={"center"}>
-                <div className="wheel">
+                <div className={`wheel ${glow}`}>
                     <div className="wheel-dial">
                         {locked && <LockIcon className="locked-wheel" />}
                     </div>
@@ -179,8 +242,10 @@ Wheel.propTypes = {
     rotation: PropTypes.string.isRequired,
     changeRotation: PropTypes.func.isRequired,
     trigger: PropTypes.func.isRequired,
-    read: PropTypes.func.isRequired,
+    screenUpdate: PropTypes.func.isRequired,
     changeLockStatus: PropTypes.func.isRequired,
+    round: PropTypes.string.isRequired,
+    nudger: PropTypes.number,
     symbolsForced: PropTypes.array,
     locked: PropTypes.bool
 };
