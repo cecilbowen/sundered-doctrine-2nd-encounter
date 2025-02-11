@@ -95,7 +95,7 @@ export const getWheelNextPosition = (position, rotation, amount) => {
 };
 
 export const getSymbolImage = name => {
-    return `url(/symbols/${name}.png)`;
+    return `url(symbols/${name}.png)`;
 };
 
 export const grabRandomSymbol = symbols => {
