@@ -31,14 +31,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-          cache: 'npm'
-
       - name: Install NPM Packages
-        run: npm ci
+        uses: bahmutov/npm-install@v1
 
       - name: Build project
         run: npm run build
