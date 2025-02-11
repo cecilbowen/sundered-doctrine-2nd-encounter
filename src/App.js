@@ -3,8 +3,9 @@ import Lock from './components/Lock';
 import PhaseTimer from './components/PhaseTimer';
 import Wheel from './components/Wheel';
 import { useState, useEffect } from 'react';
-import { getSymbolImage, getWheelFromPhase, normalizePhase, ROUNDS } from './util';
+import { getSymbolImage, getTextRotation, getTimestamp, getWheelFromPhase, normalizePhase, ROUNDS } from './util';
 import { Paper } from '@mui/material';
+import { useLog } from './hooks/LogContext';
 
 /*
   about 1:10 per turn
@@ -16,13 +17,14 @@ import { Paper } from '@mui/material';
 */
 
 const App = () => {
-  const secondsPerPhase = 10;
-  const secondsPerTurn = 70;
+  const secondsPerPhase = 15; // per bar (4 bars total)
+  const secondsPerPause = 10; // stop symbol
 
+  const [timer, setTimer] = useState(0); // elapsed time in seconds.  used for timestamps
   const [playing, setPlaying] = useState(false);
   const [turn, setTurn] = useState(0); // goes up 1 every 4 phases
-  const [phase, setPhase] = useState(0); // cumulative (goes beyond 4)
   const [round, setRound] = useState(ROUNDS.PREP); // "lockset progression", "lockset engagement" or "damage"
+  const [phase, setPhase] = useState(0); // cumulative (goes beyond 4)
   const [resetFlag, setResetFlag] = useState(false);
   const [lockResetFlag, setLockResetFlag] = useState(false); // the more of these the lazier i become
 
@@ -47,12 +49,20 @@ const App = () => {
   const lockWheelFuncs = [null, setWheel1Locked, setWheel2Locked, setWheel3Locked, setWheel4Locked];
 
   // action = { wheelNumber, symbol }
-  const [actions, setActions] = useState([]); // history of all triggered actions
+  const [actions, setActions] = useState([]); // history of all triggered symbols
+  const [events, setEvents] = useState([]); // history of all shrieker, wheel and screen events
   const [currentActions, setCurrentActions] = useState([]); // actions of the current read
+  const [oldSymbol, setOldSymbol] = useState();
+  const { logEvent, eventLog, callEvent, clearLog } = useLog();
 
   const [prevRound, setPrevRound] = useState();
   const [nextRound, setNextRound] = useState();
   const [nudger, setNudger] = useState(0);
+  const [simpleEvents, setSimpleEvents] = useState(false); // if false, full event log, otherwise, just symbol icons
+
+  useEffect(() => {
+    console.log("extend ------------", oldSymbol);
+  }, [oldSymbol]);
 
   useEffect(() => {
     if (resetFlag) {
@@ -84,7 +94,7 @@ const App = () => {
 
   useEffect(() => {
     const modPhase = normalizePhase(phase);
-    if (round === ROUNDS.PREP && modPhase === 4) {
+    if (round === ROUNDS.PREP && modPhase === 4 && lockSymbol1 !== "kill") {
       const allLocksEngaged = lockSymbolValues.filter(x => x && x !== "blank").length === 4;
       console.log('locks? ', allLocksEngaged);
       if (allLocksEngaged) {
@@ -93,6 +103,22 @@ const App = () => {
       }
     }
   }, [lockSymbol1]);
+
+  useEffect(() => {
+    console.log(`starting ${round} round`);
+    callEvent(round, {
+      bars: `${4 - normalizePhase(phase)}`
+    }, timer);
+
+    if (round === ROUNDS.STALL) {
+      // plague
+      triggerPlague(); // trigger first one manually, since phase already changed to 0
+    }
+
+    if (round === ROUNDS.DPS) {
+      callEvent("dps-screens", {}, timer);
+    }
+  }, [round]);
 
   useEffect(() => {
     const modPhase = normalizePhase(phase);
@@ -119,20 +145,17 @@ const App = () => {
       // trigger corresponding screen effect on phase change
       triggerPlague();
     }
-  }, [phase]);
 
-  useEffect(() => {
-    console.log(`starting ${round} round`);
-    if (round === ROUNDS.STALL) {
-      // plague
-      triggerPlague(); // trigger first one manually, since phase already changed to 0
-    }
-  }, [round]);
+    const increaseAmount = modPhase > 0 ? secondsPerPhase : 0;
+    const extra = oldSymbol === "stop" ? secondsPerPause : 0;
+    console.log('increaseAmount, extra', increaseAmount, extra, oldSymbol);
+    setTimer(timer + increaseAmount + extra);
+  }, [phase]);
 
   useEffect(() => {
     if (!nextRound && !prevRound && phase > 0 && normalizePhase(phase) === 0) {
       setPhase(0);
-      setLockResetFlag(true);
+      // setLockResetFlag(true);
     }
   }, [prevRound]);
 
@@ -148,7 +171,11 @@ const App = () => {
 
     if (screenToRead) {
       const action = lockSymbolValues[screenToRead];
-      trigger(`screen-${screenToRead}`, action);
+      trigger(screenToRead, action);
+      callEvent("shrieker-read", {
+          device: "screen",
+          number: screenToRead, symbol: action
+      }, timer);
       console.log(`[${round}]: plague ${normalizePhase(phase)} - ${action}`);
     }
   };
@@ -164,31 +191,54 @@ const App = () => {
   const trigger = (wheelNumber, symbol) => {
     if (!symbol || symbol === "blank") {
       console.log(`wheel ${wheelNumber} blank - no trigger..`);
+      callEvent("trigger", {
+        number: wheelNumber, symbol: "blank",
+      }, timer);
+      callEvent("blank", {}, timer);
       return;
     }
-    const newAction = { wheelNumber, symbol };
+
+    callEvent("trigger", {
+      number: wheelNumber, symbol
+    }, timer);
+
+    if (symbol === "stop") {
+      console.log("EXTENDING NEXT PHASE");
+    }
+
+    setOldSymbol(prev => {
+      console.log("prev old symbol:", prev);
+      return symbol;
+    });
+
+    const newAction = { wheelNumber, symbol, timestamp: timer };
     setCurrentActions([newAction]);
-    console.log(`wheel ${wheelNumber} triggered symbol: ${symbol}`);
+
+    const direction = wheelNumber < 3 ? "left" : "right";
+
+    callEvent(symbol, {
+      round: `${round}`, direction: `${direction}`, number: `${wheelNumber}`
+    }, timer);
+
+    console.log(`wheel ${wheelNumber} triggered symbol: ${symbol} at ${timer} seconds`);
   };
 
   const changeWheelRotation = (wheelNumber, rotation) => {
     const setFunc = wheelRotationFuncs[wheelNumber];
     console.log(wheelNumber, rotation);
-    setFunc(rotation === "cw" ? "ccw" : "cw");
+    const newRotation = rotation === "cw" ? "ccw" : "cw";
+    const textRotation = getTextRotation(newRotation);
+    setFunc(newRotation);
+
+    callEvent("change-rotation", {
+      number: wheelNumber, angle: textRotation,
+  }, timer);
   };
 
   const screenUpdate = (wheelNumber, symbol) => {
     const lockFunc = lockSymbolFuncs[wheelNumber];
     lockFunc(symbol);
     console.log(`wheel ${wheelNumber} screen update with symbol: ${symbol}`);
-  };
-
-  const renderAction = ({ wheelNumber, symbol }, index) => {
-    const backgroundImage = getSymbolImage(symbol);
-    const text = `Wheel ${wheelNumber}: ${symbol}`;
-    return <div className="action-image" style={{ backgroundImage, position: "relative" }} title={text}>
-      <div style={{ position: 'absolute', fontWeight: 'bold', left: "50%", top: "50%" }}>{index + 1}</div>
-    </div>;
   };
 
   const advancePhase = () => {
@@ -201,6 +251,9 @@ const App = () => {
 
   const resetEncounter = () => {
     console.log('resetEncounter()');
+    clearLog();
+    setPrevRound(undefined);
+    setNextRound(undefined);
     setRound(ROUNDS.PREP);
     setPlaying(false);
     setPhase(0);
@@ -208,6 +261,7 @@ const App = () => {
     resetWheels(true);
     resetScreens();
     resetActions();
+    setTimer(0);
   };
 
   const damageComplete = () => {
@@ -274,33 +328,68 @@ const App = () => {
     return null;
   }
 
+  const renderAction = ({ wheelNumber, symbol }, index) => {
+    const backgroundImage = getSymbolImage(symbol);
+    const text = `Wheel ${wheelNumber}: ${symbol}`;
+    return <div className="action-image" style={{ backgroundImage, position: "relative" }} title={text}>
+      <div className="action-number">{index + 1}</div>
+    </div>;
+  };
+
+  const renderEvent = ({ text, seconds, symbol }, index) => {
+    const timestamp = getTimestamp(seconds);
+    const backgroundImage = getSymbolImage(symbol);
+
+    return <div className="event-message" key={`${text}-${index}`}>
+      <div className="event-timestamp">{`[${timestamp}]: `}</div>
+      {symbol && <div className="chat-symbol" style={{ backgroundImage }} title={symbol} />}
+      <div className="event-text">{text}</div>
+    </div>;
+  };
+
+  const renderSimpleEvents = () => {
+    return <Paper elevation={2} className="actions-paper">
+      <div className="actions" id="event-log">
+        {actions.map((x, i) => renderAction(x, i))}
+      </div>
+    </Paper>;
+  };
+
+  const renderEventLog = () => {
+    const evs = [...events, ...eventLog]; // testing, remove later
+
+    return <Paper elevation={2} className="event-paper">
+      <div className="events" id="event-log">
+        {evs.map((x, i) => renderEvent(x, i))}
+      </div>
+    </Paper>;
+  };
+
   return (
     <div className="App">
-      <PhaseTimer phase={phase} advancePhase={advancePhase} round={round}
-        playPauseEncounter={playPauseEncounter} resetEncounter={resetEncounter} />
-      {!lockResetFlag && <div className="locks">
-        <Lock lockNumber={1} symbol={lockSymbol1} phase={phase} round={round} />
-        <Lock lockNumber={2} symbol={lockSymbol2} phase={phase} round={round} />
-        <Lock lockNumber={3} symbol={lockSymbol3} phase={phase} round={round} />
-        <Lock lockNumber={4} symbol={lockSymbol4} phase={phase} round={round} />
-      </div>}
-      <div className="wheels">
-        <Wheel wheelNumber={1} phase={phase} locked={wheel1Locked} nudger={nudger}
-          rotation={wheel1Rotation} changeRotation={changeWheelRotation} round={round}
-          trigger={trigger} screenUpdate={screenUpdate} changeLockStatus={changeLockStatus} />
-        <Wheel wheelNumber={2} phase={phase} locked={wheel2Locked} nudger={nudger}
-          rotation={wheel2Rotation} changeRotation={changeWheelRotation} round={round}
-          trigger={trigger} screenUpdate={screenUpdate} changeLockStatus={changeLockStatus} />
-        <Wheel wheelNumber={3} phase={phase} locked={wheel3Locked} nudger={nudger}
-          rotation={wheel3Rotation} changeRotation={changeWheelRotation} round={round}
-          trigger={trigger} screenUpdate={screenUpdate} changeLockStatus={changeLockStatus} />
-        <Wheel wheelNumber={4} phase={phase} locked={wheel4Locked} nudger={nudger}
-          rotation={wheel4Rotation} changeRotation={changeWheelRotation} round={round}
-          trigger={trigger} screenUpdate={screenUpdate} changeLockStatus={changeLockStatus} />
-      </div>
-      <Paper elevation={2} className="actions">
-        {actions.map((x, i) => renderAction(x, i))}
-      </Paper>
+        <PhaseTimer phase={phase} advancePhase={advancePhase} round={round} timer={timer}
+          playPauseEncounter={playPauseEncounter} resetEncounter={resetEncounter} />
+        {!lockResetFlag && <div className="locks">
+          <Lock lockNumber={1} symbol={lockSymbol1} phase={phase} round={round} />
+          <Lock lockNumber={2} symbol={lockSymbol2} phase={phase} round={round} />
+          <Lock lockNumber={3} symbol={lockSymbol3} phase={phase} round={round} />
+          <Lock lockNumber={4} symbol={lockSymbol4} phase={phase} round={round} />
+        </div>}
+        <div className="wheels">
+          <Wheel wheelNumber={1} phase={phase} locked={wheel1Locked} nudger={nudger} pendingRound={nextRound}
+            rotation={wheel1Rotation} changeRotation={changeWheelRotation} round={round} timer={timer}
+            trigger={trigger} screenUpdate={screenUpdate} changeLockStatus={changeLockStatus} />
+          <Wheel wheelNumber={2} phase={phase} locked={wheel2Locked} nudger={nudger} pendingRound={nextRound}
+            rotation={wheel2Rotation} changeRotation={changeWheelRotation} round={round} timer={timer}
+            trigger={trigger} screenUpdate={screenUpdate} changeLockStatus={changeLockStatus} />
+          <Wheel wheelNumber={3} phase={phase} locked={wheel3Locked} nudger={nudger} pendingRound={nextRound}
+            rotation={wheel3Rotation} changeRotation={changeWheelRotation} round={round} timer={timer}
+            trigger={trigger} screenUpdate={screenUpdate} changeLockStatus={changeLockStatus} />
+          <Wheel wheelNumber={4} phase={phase} locked={wheel4Locked} nudger={nudger} pendingRound={nextRound}
+            rotation={wheel4Rotation} changeRotation={changeWheelRotation} round={round} timer={timer}
+            trigger={trigger} screenUpdate={screenUpdate} changeLockStatus={changeLockStatus} />
+        </div>
+        {simpleEvents ? renderSimpleEvents() : renderEventLog()}
     </div>
   );
 };

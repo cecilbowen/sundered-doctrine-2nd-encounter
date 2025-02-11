@@ -11,7 +11,7 @@ import ResetIcon from '@mui/icons-material/Replay';
 import NextIcon from '@mui/icons-material/NavigateNext';
 import PlayIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
-import { getReadTotalFromPhase, normalizePhase, ROUNDS } from '../util';
+import { getReadTotalFromPhase, getTimestamp, normalizePhase, ROUNDS } from '../util';
 
 const StyledRating = styled(Rating)({
     '& .MuiRating-iconFilled, .prep': { // Apply to custom class "prep"
@@ -22,7 +22,8 @@ const StyledRating = styled(Rating)({
     },
 });
 
-const PhaseTimer = ({ phase, resetEncounter, advancePhase, playPauseEncounter, round }) => {
+const PhaseTimer = ({ phase, resetEncounter, advancePhase, timer,
+    playPauseEncounter, round, playPauseImplemented }) => {
     const modPhase = normalizePhase(phase);
     const [damagePhaseCutoff, setDamagePhaseCutoff] = useState(0);
 
@@ -64,10 +65,12 @@ const PhaseTimer = ({ phase, resetEncounter, advancePhase, playPauseEncounter, r
         );
     };
 
+    const timestamp = ` (${getTimestamp(timer)})`;
+
     return (
-        <Grid className="caption-grid" sx={{ marginLeft: "20em" }} container spacing={2}>
+        <Grid className="caption-grid" sx={{ margin: "auto" }} container spacing={2}>
             <Grid size={12}>
-                <Typography fontWeight={"bold"} className="lockset-label">{round}</Typography>
+                <Typography fontWeight={"bold"} className="lockset-label">{round}{timestamp}</Typography>
             </Grid>
             <Grid size={12}>
                 <Box className="phase timer-holder" sx={{ '& > legend': { mt: 2 } }}>
@@ -94,10 +97,10 @@ const PhaseTimer = ({ phase, resetEncounter, advancePhase, playPauseEncounter, r
                     >
                         <NextIcon />
                     </IconButton>
-                    <IconButton onClick={playPauseEncounter} title={`Play/Pause Encounter`}
+                    {playPauseImplemented && <IconButton onClick={playPauseEncounter} title={`Play/Pause Encounter`}
                         sx={{ color: "green", transform: 'translateX(63px) scale(0.8)' }} size="small" className="control-button">
                         <PlayIcon />
-                    </IconButton>
+                    </IconButton>}
                 </Box>
             </Grid>
         </Grid>
@@ -109,6 +112,8 @@ PhaseTimer.propTypes = {
     resetEncounter: PropTypes.func.isRequired,
     advancePhase: PropTypes.func.isRequired,
     playPauseEncounter: PropTypes.func.isRequired,
-    round: PropTypes.string.isRequired
+    round: PropTypes.string.isRequired,
+    playPauseImplemented: PropTypes.bool,
+    timer: PropTypes.number,
 };
 export default PhaseTimer;

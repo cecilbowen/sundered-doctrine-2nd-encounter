@@ -27,6 +27,8 @@ damage round:
     x: damage starts
 
 todo:
+    wheel turn animation (probably a transition)
+    number the wheels/locks visibly
     action bar scroll to new action 
     event log
         timestamp as either timestamp or progress percentage

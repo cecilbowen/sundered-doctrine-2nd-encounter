@@ -1,0 +1,26 @@
+{
+    "blank": "Blank symbol, nothing happens",
+    "stop": "_round_ paused for around 10 seconds",
+    "hive": "Spawned 2 ogres total, one on each left and right sides",
+    "remember": "Spawned acolytes, a knight (_direction_ side) and 3 wizards (left, middle, right)",
+    "commune": "Shrieker _number_ attacks with darkness bees",
+    "kill": "Triggered Damage phase (lockset cracked)",
+
+    "damage": "Damage phase started.  Lasts for the rest of the round (_bars_ bars)",
+    "lockset progression": "Lock Progression phase started",
+    "lockset engagement": "Lockset Engagement phase started.  Endure the effects of the four screens",
+
+    "trigger": "Wheel _number_ triggered _symbol_",
+    "deposit": "Player deposited _amount_ stacks of knowledge (_knowledge_) into wheel _number_",
+    "replace-blank": "Wheel _number_ updated blank symbol to _symbol_",
+
+    "dps-screens": "Screens updated to match current wheel symbols",
+    "shrieker-read": "Shrieker reads _device_ _number_ and triggers _symbol_",
+    "shrieker-rotate": "Shrieker rotates wheel _number_",
+    "screen": "Screen _number_ triggered _symbol_",
+    "rotate": "Wheel _number_ rotated _angle_ by _amount_ [_source_]",
+    "rotate-kill": "Wheel _number_ rotated _angle_ again by 1 to skip kill symbol",
+    "change-rotation": "Wheel _number_ changed rotation to _angle_",
+
+    "vars": ["round", "direction", "number", "bars", "symbol", "angle"]
+}

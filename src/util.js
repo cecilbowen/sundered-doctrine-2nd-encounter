@@ -6,6 +6,11 @@ const SYMBOL_NAMES = [
     'remember',
 ];
 
+export const isSymbol = text => {
+    const isSymbol = SYMBOL_NAMES.includes(text) || text === "blank";
+    return isSymbol ? text : false;
+};
+
 export const WHEEL_TO_SCREEN = {
     0: 99,
     3: 4, // if screen update, if phase 3, update screen 4
@@ -172,4 +177,25 @@ export const generateNewSymbols = wheelNumber => {
     }
 
     return ["blank", ...shuffle([...SYMBOL_NAMES]), grabRandomSymbol()];
+};
+
+// used with events.json
+export const details = (str, replacements) => {
+    return str.replace(/_(\w+)_/g, (match, key) => replacements[key] || match);
+};
+
+export const getTimestamp = totalSeconds => {
+    const seconds = totalSeconds % 60;
+    const minutes = totalSeconds >= 60 ? Math.floor(totalSeconds / 60) : 0;
+    const hours = minutes > 60 ? minutes / 60 : 0;
+
+    const ss = `${seconds}`.length < 2 ? `0${seconds}` : `${seconds}`;
+    const mm = `${minutes}`.length < 2 ? `0${minutes}` : `${minutes}`;
+    let hh = `${hours}`.length < 2 ? `0${hours}:` : `${hours}:`;
+    if (hours === 0) { hh = ""; }
+    return `${hh}${mm}:${ss}`;
+};
+
+export const getTextRotation = rotation => {
+    return rotation === "cw" ? "clockwise" : "counter-clockwise";
 };

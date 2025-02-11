@@ -15,14 +15,16 @@ import { getSymbolImage, getWheelNextPosition,
     isWheelBeingRead,
     doesWheelMatter,
     ROUNDS,
-    getWheelToRotate } from '../util';
+    getWheelToRotate,
+    getTextRotation } from '../util';
 import DunkIcon from '@mui/icons-material/MoveToInbox';
 import '../Spin.css';
-import { Paper } from '@mui/material';
+import { Button, Paper } from '@mui/material';
+import { useLog } from '../hooks/LogContext';
 
 const Wheel = ({ wheelNumber, symbolsForced, rotation,
     locked, changeRotation, phase, trigger, screenUpdate,
-    changeLockStatus, round, nudger
+    changeLockStatus, round, nudger, pendingRound, timer
 }) => {
 // no-lint
 /* symbols array order
@@ -38,6 +40,7 @@ const Wheel = ({ wheelNumber, symbolsForced, rotation,
     const [position, setPosition] = useState(0); // 0 - 6 (symbol "clock" positions)
     const [action, setAction] = useState(); // active symbol
     const [symbols, setSymbols] = useState();
+    const { callEvent } = useLog();
     const angles = [0, -60, -105, 210, 150, 105, 60]; // counter angles for images to stay upright
 
     useEffect(() => {
@@ -85,7 +88,7 @@ const Wheel = ({ wheelNumber, symbolsForced, rotation,
         } else if (round === ROUNDS.STALL) {
             // wheels have no affect during stall round, only screens
             return;
-        } else {
+        } else if (!pendingRound || pendingRound !== ROUNDS.STALL) {
             // prep round, standard stuff
             if (shouldScreenUpdateHappen(phase)) {
                 console.log("screen update imminent.  wheelToCopy: ", wheelToCopy);
@@ -119,6 +122,15 @@ const Wheel = ({ wheelNumber, symbolsForced, rotation,
     const rotateWheel = (auto, amount = 1) => {
         if (!symbols) { return; }
 
+        if (!auto) {
+            const adjectives = ["", "Heightened", "Brimming", "Overwhelming"];
+
+            callEvent("deposit", {
+                number: wheelNumber, knowledge: adjectives[amount],
+                amount
+            }, timer);
+        }
+
         // manual rotation during dps changes screens, if wheel hasn't been processed yet
         if (!auto && round === ROUNDS.DPS) {
             if (doesWheelMatter(wheelNumber, phase)) {
@@ -127,6 +139,12 @@ const Wheel = ({ wheelNumber, symbolsForced, rotation,
                 setPosition(newPos);
                 setAction(symbols[newPos]);
                 screenUpdate(wheelNumber, symbols[newPos]);
+
+                callEvent("rotate", {
+                    number: wheelNumber, angle: getTextRotation(rotation),
+                    amount, source: "player"
+                }, timer);
+
                 return;
             }
         } else if (auto && (locked || phase === 0)) {
@@ -139,15 +157,28 @@ const Wheel = ({ wheelNumber, symbolsForced, rotation,
 
         let newPos = getWheelNextPosition(position, rotation, amount);
 
+        callEvent("rotate", {
+            number: wheelNumber, angle: getTextRotation(rotation),
+            amount, source: auto ? "auto" : "player"
+        }, timer);
+
         // never auto-rotate to kill
         if (auto && symbols[newPos] === 'kill') {
             newPos = getWheelNextPosition(newPos, rotation, 1);
+
+            callEvent("rotate-kill", {
+                number: wheelNumber, angle: getTextRotation(rotation)
+            }, timer);
         }
 
         const syms = [...symbols];
         const blankIndex = syms.indexOf("blank");
         if (blankIndex !== -1) {
             syms[blankIndex] = grabRandomSymbol(syms);
+
+            callEvent("replace-blank", {
+                number: wheelNumber, symbol: syms[blankIndex]
+            }, timer);
         }
 
         setSymbols(syms);
@@ -191,7 +222,7 @@ const Wheel = ({ wheelNumber, symbolsForced, rotation,
             <ThreeIcon className="dunk-button" key={`wheel-${wheelNumber}-dunk-${stack}`} />
         ];
 
-        return <IconButton onClick={() => rotateWheel(false, stack)}
+        return <IconButton onClick={() => rotateWheel(false, stack)} className="dunk-icon-button"
             title={`Deposit ${adjectives[stack]} Knowledge`}>
                 {icons[stack]}
         </IconButton>;
@@ -207,16 +238,21 @@ const Wheel = ({ wheelNumber, symbolsForced, rotation,
     const glow = wheelNumber === wheelToRead ? 'active' : '';
 
     return (
-        <Grid className="caption-grid" container spacing={2}>
+        <Grid className="caption-grid" container spacing={1}>
             <Grid size={12} sx={{ display: "flex" }} justifyContent={"center"}>
-                <IconButton onClick={prepWheelRotation}
+                <Button variant="outlined" onClick={prepWheelRotation} title={`Change Wheel ${wheelNumber} Rotation`}
+                    className="change-rotation-button" startIcon={<DiamondIcon />}>
+                    Rotation
+                </Button>
+                {/* <IconButton onClick={prepWheelRotation} className="change-rotation-button"
                     title={`Change Wheel ${wheelNumber} Rotation`}>
                     <DiamondIcon />
                     {doBeScreenUpdating && "SCREEN UPDATE"}
-                </IconButton>
+                </IconButton> */}
             </Grid>
             <Grid size={12} sx={{ display: "flex" }} justifyContent={"center"}>
                 <div className={`wheel ${glow}`}>
+                    <div className="wheel-number">{wheelNumber}</div>
                     <div className="wheel-dial">
                         {locked && <LockIcon className="locked-wheel" />}
                     </div>
@@ -245,6 +281,8 @@ Wheel.propTypes = {
     screenUpdate: PropTypes.func.isRequired,
     changeLockStatus: PropTypes.func.isRequired,
     round: PropTypes.string.isRequired,
+    pendingRound: PropTypes.string,
+    timer: PropTypes.number,
     nudger: PropTypes.number,
     symbolsForced: PropTypes.array,
     locked: PropTypes.bool

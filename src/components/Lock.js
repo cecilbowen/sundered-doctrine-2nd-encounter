@@ -50,6 +50,7 @@ const Lock = ({ lockNumber, symbol, phase, round }) => {
         }
 
         return <div className={`lock-box`}>
+            <div className="lock-number">{lockNumber}</div>
             <div className={`lock ${glow}`} id={`lock-${lockNumber}`} style={{ backgroundImage }} />
         </div>;
     };
