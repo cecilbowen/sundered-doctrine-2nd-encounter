@@ -25,10 +25,6 @@ const Lock = ({ lockNumber, symbol, phase, round }) => {
         }
     }, [round]);
 
-    useEffect(() => {
-        console.log("@@@@@@@@@@ Symbol changed on a Lock!!!###", symbol, lockNumber);
-    }, [symbol]);
-
     const renderSymbol = name => {
         if (!name) {
             name = "blank";

@@ -49,7 +49,6 @@ const Wheel = ({ wheelNumber, symbolsForced, rotation,
             newSymbols = generateNewSymbols(wheelNumber);
         }
 
-        console.log(wheelNumber, newSymbols);
         setSymbols(newSymbols);
         setAction(newSymbols[position]);
     }, []);
@@ -62,12 +61,17 @@ const Wheel = ({ wheelNumber, symbolsForced, rotation,
                     // remove kill from any activate-able wheels
                     const killIndex = syms.indexOf("kill");
                     const blankIndex = syms.indexOf("blank");
-                    syms[killIndex] = grabRandomSymbol(syms);
+                    const newKillReplacement = grabRandomSymbol(syms);
+                    syms[killIndex] = newKillReplacement;
+
+                    callEvent("replace-kill", {
+                        number: wheelNumber, symbol: newKillReplacement
+                    }, timer);
+
                     if (blankIndex !== -1) {
                         syms[blankIndex] = grabRandomSymbol(syms);
                     }
                     setSymbols(syms);
-                    console.log(`wheel #${wheelNumber} still can be activated - removing KILL from it`);
                 }
                 screenUpdate(wheelNumber, syms[position]);
             } // TODO: test stall phase end, with a KILL on wheel 1 (immediate dps phase?)
@@ -83,7 +87,6 @@ const Wheel = ({ wheelNumber, symbolsForced, rotation,
             if (isWheelBeingRead(wheelNumber, phase) && doesWheelMatter(wheelNumber, phase)) {
                 // can still reflect changes on screen
                 trigger(wheelNumber, action);
-                console.log(`\t damage phase, wheel ${wheelNumber} trigger`);
             }
         } else if (round === ROUNDS.STALL) {
             // wheels have no affect during stall round, only screens
@@ -91,20 +94,24 @@ const Wheel = ({ wheelNumber, symbolsForced, rotation,
         } else if (!pendingRound || pendingRound !== ROUNDS.STALL) {
             // prep round, standard stuff
             if (shouldScreenUpdateHappen(phase)) {
-                console.log("screen update imminent.  wheelToCopy: ", wheelToCopy);
                 if (wheelToCopy === wheelNumber) {
-                    console.log("\t wheelNumber matches, update time: ", wheelNumber);
                     screenUpdate(wheelNumber, action);
                 }
             }
 
             if (wheelToRead === wheelNumber) {
-                changeLockStatus(wheelNumber, false);
                 trigger(wheelNumber, action);
             }
 
             if (wheelToRotate === wheelNumber) {
-                rotateWheel(true);
+                if (locked) {
+                    changeLockStatus(wheelNumber, false);
+                    callEvent("unlock-wheel", {
+                        number: wheelNumber
+                    }, timer);
+                } else {
+                    rotateWheel(true);
+                }
             }
         }
     };
@@ -134,7 +141,6 @@ const Wheel = ({ wheelNumber, symbolsForced, rotation,
         // manual rotation during dps changes screens, if wheel hasn't been processed yet
         if (!auto && round === ROUNDS.DPS) {
             if (doesWheelMatter(wheelNumber, phase)) {
-                console.log(`wheel ${wheelNumber} during ${round} matters! <33`);
                 const newPos = getWheelNextPosition(position, rotation, amount);
                 setPosition(newPos);
                 setAction(symbols[newPos]);

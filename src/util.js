@@ -20,7 +20,6 @@ export const WHEEL_TO_SCREEN = {
 };
 
 const phaseToWheelRotation = { // phase: wheel map
-    0: 4,
     1: 1, // on phase 1, wheel 1 rotates, etc
     2: 2,
     3: 3,
