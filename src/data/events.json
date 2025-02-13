@@ -23,6 +23,7 @@
     "rotate": "Wheel _number_ rotated _angle_ by _amount_ [_source_]",
     "rotate-kill": "Wheel _number_ rotated _angle_ again by 1 to skip kill symbol",
     "change-rotation": "Wheel _number_ changed rotation to _angle_",
+    "rotation-lockout": "Wheel _number_ rotation changer is on a 5 second cooldown",
 
     "vars": ["round", "direction", "number", "bars", "symbol", "angle"]
 }

@@ -165,7 +165,7 @@ export const generateNewSymbols = wheelNumber => {
     const ret = [wheelStart[wheelNumber], ...shuffle([...SYMBOL_NAMES, grabRandomSymbol()])];
 
     // kill can only be spots 4-5 on wheels 1 & 2,
-    //                  spots 2-6 on wheel 3
+    //                  spots 3-6 on wheel 3
     //                  spots 2-7 on wheel 4
     // at least on encounter start
 
@@ -173,7 +173,7 @@ export const generateNewSymbols = wheelNumber => {
     if (wheelNumber < 3) {
         spots = [3, 4];
     } else if (wheelNumber === 3) {
-        spots = [1, 2, 3, 4, 5];
+        spots = [2, 3, 4, 5];
     }
 
     const killIndex = ret.indexOf("kill");
