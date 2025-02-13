@@ -33,6 +33,15 @@ export const LogProvider = ({ children }) => {
 
     const event = { text, seconds, symbol };
 
+    const noDupeEvents = ["trigger", "blank", "stop", "hive", "remember", "commune", "kill"];
+    const dupeCheck = noDupeEvents.includes(name) &&
+      eventLog.filter(x => x.seconds === seconds && x.symbol === symbol && x.text === text)[0];
+
+    if (dupeCheck) {
+      console.warn('event log was about to post a duplicate, skipped');
+      return;
+    }
+
     // if (eventLog.filter(x => x.text === text && x.seconds === seconds).length > 0) {
     //   console.warn('skipping duplicate event in event log (probably cause of react strict mode)', text);
     //   return;

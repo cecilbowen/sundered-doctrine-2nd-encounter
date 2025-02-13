@@ -155,27 +155,35 @@ const shuffle = array => {
 };
 
 export const generateNewSymbols = wheelNumber => {
-    const blankWheel = wheelNumber === 1 || wheelNumber === 3;
+    const wheelStart = {
+        1: "blank",
+        2: "remember",
+        3: "blank",
+        4: "remember",
+    };
 
-    if (!blankWheel) {
-        const ret = ["remember", ...shuffle([...SYMBOL_NAMES]).filter(x => x !== "remember")];
+    const ret = [wheelStart[wheelNumber], ...shuffle([...SYMBOL_NAMES, grabRandomSymbol()])];
 
-        for (let i = 0; i < 7 - ret.length + 1; i++) {
-            let tempSymbol = "blank";
-            while (true) {
-                const checkSymbol = tempSymbol;
-                if (checkSymbol !== "blank" && ret.filter(x => x === checkSymbol).length < 3) {
-                    break;
-                }
-                tempSymbol = grabRandomSymbol();
-            }
-            ret.push(tempSymbol);
-        }
+    // kill can only be spots 4-5 on wheels 1 & 2,
+    //                  spots 2-6 on wheel 3
+    //                  spots 2-7 on wheel 4
+    // at least on encounter start
 
-        return ret;
+    let spots = [1, 2, 3, 4, 5, 6];
+    if (wheelNumber < 3) {
+        spots = [3, 4];
+    } else if (wheelNumber === 3) {
+        spots = [1, 2, 3, 4, 5];
     }
 
-    return ["blank", ...shuffle([...SYMBOL_NAMES]), grabRandomSymbol()];
+    const killIndex = ret.indexOf("kill");
+    if (!spots.includes(killIndex)) {
+        const newKillIndex = shuffle([...spots])[0];
+        ret[killIndex] = ret[newKillIndex];
+        ret[newKillIndex] = "kill";
+    }
+
+    return ret;
 };
 
 // used with events.json
